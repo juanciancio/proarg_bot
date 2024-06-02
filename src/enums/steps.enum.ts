@@ -1,0 +1,6 @@
+export enum Steps {
+  NON_STEP = 0,
+  NAME_LASTNAME_STEP = 1,
+  BIRTHDAY_STEP = 2,
+  TELEGRAM_ALIAS_STEP = 3,
+}
