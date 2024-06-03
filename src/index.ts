@@ -1,14 +1,16 @@
 import { Context, Markup, Telegraf } from "telegraf";
-import { Steps } from "./enums/steps.enum";
-import { Pool } from "pg";
+
+import { message } from "telegraf/filters";
+import { Steps } from "./enums/steps.enum.js";
 import fetch from "node-fetch";
 import { promises as fs } from "fs";
 
 import dotenv from "dotenv";
-import { UserModel } from "./models/user.model";
-import pool from "./config/database";
+import { UserModel } from "./models/user.model.js";
+import pool from "./config/database.js";
 import { CallbackQuery, Update } from "telegraf/typings/core/types/typegram";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -16,6 +18,9 @@ const token = process.env.TELEGRAM_BOT_TOKEN!;
 
 const bot = new Telegraf(token);
 const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/(19|20)\d{2}$/;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let currentStep: Steps = Steps.NON_STEP;
 let user: UserModel = new UserModel();
@@ -42,34 +47,17 @@ bot.action("SIGNUP_BUTTON", async (ctx) => {
   currentStep = Steps.NAME_LASTNAME_STEP;
 });
 
-bot.command("/ayuda", (ctx) => {
-  const helpMessage = `
-    [PROARG - BOT Torneos] Comandos disponibles:
-    /start - Inicia el bot
-    /inscribirme - Inicia el proceso de inscripción al Torneo activo
-    `;
-  ctx.reply(helpMessage);
-});
-
-bot.command("/enviarapuesta", async (ctx) => {
-  const userSubscripted = checkSubscription(ctx.from.id);
-  if (!userSubscripted)
-    return ctx.reply(
-      "Antes de enviar tu apuesta debes inscribirte al torneo con /inscribirme"
-    );
-  ctx.reply("Adjunta una foto de tu apuesta, procurá que no sean más de una.");
-});
-
 bot.on("message", async (ctx) => {
-  console.log(ctx.message);
-  if ("photo" in ctx.message && uploadBet) {
+  const message = ctx.text;
+
+  if ("photo" in ctx.message) {
     try {
       if (!uploadBet)
         return ctx.reply(
           "No entiendo tu mensaje. Recuerda que si querés enviar tu apuesta primero debes usar el comando /enviarapuesta"
         );
 
-      checkFileExists(ctx);
+      //checkFileExists(ctx);
 
       const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
 
@@ -77,25 +65,27 @@ bot.on("message", async (ctx) => {
       const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
 
       const response = await fetch(fileUrl);
-      const buffer = await response.buffer();
+      const arrayBuffer = await response.arrayBuffer();
 
-      const fileName = `./assets/bets_img/${ctx.from.id}`;
-      await fs.writeFile(fileName, buffer);
+      const buffer = Buffer.from(arrayBuffer);
+
+      const fileExtension = file.file_path?.split(".").pop(); // Obtener la extensión del archivo
+      const fileName = `${ctx.from.id}.${fileExtension}`; // Usar el ID del usuario y la extensión del archivo
+      const filePath = path.join(__dirname, "assets", "bets_img", fileName); // Crear la ruta completa
+      await fs.writeFile(filePath, buffer);
 
       ctx.reply("Imagen guardada correctamente!");
+      return;
     } catch (error) {
       console.error("Error al guardar la imagen:", error);
       ctx.reply("Hubo un error al guardar la imagen.");
+      return;
     }
   }
-});
-
-bot.on("text", (ctx) => {
-  const message = ctx.message.text;
 
   if (!message?.startsWith("/")) {
     return ctx.reply(
-      "No comprendo que queires decirme. Usa /ayuda para ver los comandos disponibles."
+      "No comprendo que queres decirme. Usa /ayuda para ver los comandos disponibles."
     );
   }
 
@@ -106,6 +96,18 @@ bot.on("text", (ctx) => {
     /inscribirme - Inicia el proceso de inscripción al Torneo activo
     `;
     return ctx.reply(helpMessage);
+  }
+
+  if (message == "/enviarapuesta") {
+    const userSubscripted = checkSubscription(ctx.from.id);
+    if (!userSubscripted)
+      return ctx.reply(
+        "Antes de enviar tu apuesta debes inscribirte al torneo con /inscribirme"
+      );
+    uploadBet = true;
+    return ctx.reply(
+      "Adjunta una foto de tu apuesta, procurá que no sean más de una."
+    );
   }
 
   if (user.telegramId === -1) {
@@ -213,8 +215,6 @@ bot.action("INCORRECT_TELEGRAM_ALIAS", (ctx) => {
   user.telegramAlias = "";
 });
 
-bot.launch();
-
 const persistDatabaseUser = async (
   ctx: Context<Update.CallbackQueryUpdate<CallbackQuery>>
 ) => {
@@ -278,3 +278,18 @@ const checkFileExists = (ctx: Context) => {
     })
     .catch((err) => console.log(err));
 };
+
+// Manejar cualquier error
+bot.catch((err) => {
+  console.error("Error occurred:", err);
+});
+
+// Iniciar el bot
+bot
+  .launch()
+  .then(() => {
+    console.log("Bot is running...");
+  })
+  .catch((err) => {
+    console.error("Failed to launch bot:", err);
+  });
