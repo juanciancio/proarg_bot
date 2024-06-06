@@ -18,14 +18,19 @@ const __dirname = path.dirname(__filename);
  * @returns
  */
 export async function checkUserSub(telegramId: number): Promise<boolean> {
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     const query = await client.query('SELECT id FROM users WHERE telegram_id = $1 LIMIT 1', [
       telegramId,
     ]);
     return query.rowCount ? true : false;
   } catch (error) {
     throw error;
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }
 
