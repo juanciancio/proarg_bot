@@ -1,6 +1,4 @@
 import { Context, Markup, Telegraf } from "telegraf";
-
-import { message } from "telegraf/filters";
 import { Steps } from "./enums/steps.enum.js";
 import fetch from "node-fetch";
 import { promises as fs } from "fs";
@@ -27,24 +25,59 @@ let user: UserModel = new UserModel();
 let uploadBet = false;
 
 bot.start((ctx) => {
+  const msg = `
+  📣 Bienvenidos a la 1ra edición del Torneo de apuestas de Pronósticos Argentinos😘
+
+  ⚠️La participación en el torneo es GRATUITA y tendrá un cupo limite de 200 inscriptos, si llegas a registarte, serás uno de ellos. Es necesario que seás mayor de 18 años de edad para participar🫦
+  
+  ➡️El torneo consisitirá en varias rondas preliminares, donde comenzarán los 200 competidores, hasta llegar a la suma de 32 participantes. Una vez llegados a esa cifra, comenzará el torneo principal. 
+  ➡️Cada ronda tendrá diferentes métodos de apuestas y reglas básicas a seguir, las cuales iremos informando a medida que avancemos.
+  
+  ⌨️⌨️⌨️⌨️⌨️⌨️⌨️
+  
+  ⌨️Respeta las indicaciones de los administradores, cada ronda eliminatoria tendrá sus condiciones, es importante leer para no confundirse.
+  ⌨️No envies más apuestas de las solicitadas por ronda. Deberás enviar las imagenes de tus apuestas por este medio
+  ⌨️No es necesario que realices la apuesta con tu dinero, de igual manera, es necesario enviar el boleto elegido con una screenshot.
+  ⌨️Respeta los tiempos de espera, debemos corroborar muchas selecciones.
+  
+  💰PREMIOS:
+  
+  🥇 Puesto:💵350.000 pesos.
+  🥈 Puesto:💵100.000 pesos.
+  🥉 Puesto:💵50.000 pesos.
+  
+  ❗️Para registarte, dale click al botón 'Inscribirme':
+  
+  ❓Si tienes alguna duda, contactate con @ValenProArg  o con @NahueProArg
+  `;
   ctx.reply(
-    "Te damos la bienvenida al Bot de Torneos de PROARG! Por favor, presiona en 'Inscribirme' si estás interesado/a en participar en el Torneo activo actualmente:",
+    msg,
     Markup.inlineKeyboard([
       [Markup.button.callback("Inscribirme", "SIGNUP_BUTTON")],
     ])
   );
 });
 
+bot.command("/start", (ctx) => {
+  user.telegramId = ctx.from.id;
+  console.log(user.telegramId)
+})
+
 bot.action("SIGNUP_BUTTON", async (ctx) => {
-  const userRegistered = await checkSubscription(ctx.from.id);
-  if (userRegistered)
+  const freeSlots = await checkFreeSlots();
+  if (freeSlots && freeSlots >= 200)
     return ctx.reply(
-      "Ya te encuentras inscripto, muchas gracias por participar en el Torneo!"
-    );
+      "Hemos alcanzado el cupo máximo de inscripciones para es Torneo, ¡mucha suerte para el próximo!"
+  );
+  const userSubscripted = await checkSubscription(ctx.from.id);
+  if (userSubscripted) {
+    return ctx.reply('Ya te encuentras inscripto, muchas gracias por tu participación');
+  }
   ctx.reply(
-    "Necesitaremos algunos datos para inscribirte en el Torneo. Por favor, ingresa tu Nombre y Apellido"
+    "Necesitaremos algunos datos para realizar la inscripción. Ingresa tu Nombre y Apellido."
   );
   currentStep = Steps.NAME_LASTNAME_STEP;
+  user.telegramId = ctx.from.id;
 });
 
 bot.on("message", async (ctx) => {
@@ -54,7 +87,7 @@ bot.on("message", async (ctx) => {
     try {
       if (!uploadBet)
         return ctx.reply(
-          "No entiendo tu mensaje. Recuerda que si querés enviar tu apuesta primero debes usar el comando /enviarapuesta"
+          "Para adjuntar una imagen de tu apuesta primero debes usar el comando /enviarapuesta."
         );
 
       //checkFileExists(ctx);
@@ -74,39 +107,38 @@ bot.on("message", async (ctx) => {
       const filePath = path.join(__dirname, "assets", "bets_img", fileName); // Crear la ruta completa
       await fs.writeFile(filePath, buffer);
 
-      ctx.reply("Imagen guardada correctamente!");
+      const msg = `
+      Tu apuesta ha sido enviada y guardada con éxito. ¡Mucha suerte!
+
+      Importante: Leer las condiciones. En caso de que el boleto enviado no cumpla las condiciones solicitadas, su apuesta quedará eliminada del torneo. 
+      `;
+      ctx.reply(msg);
       return;
     } catch (error) {
       console.error("Error al guardar la imagen:", error);
-      ctx.reply("Hubo un error al guardar la imagen.");
+      ctx.reply("Hubo un error al guardar tu apuesta.");
       return;
     }
   }
 
-  if (!message?.startsWith("/")) {
+
+  if (!message?.startsWith("/") && currentStep === Steps.NON_STEP) {
     return ctx.reply(
-      "No comprendo que queres decirme. Usa /ayuda para ver los comandos disponibles."
+      "No comprendo que queres decirme. Usa /help para ver los comandos disponibles."
     );
   }
 
-  if (message === "/ayuda") {
-    const helpMessage = `
-    Comandos disponibles:
-    /start - Inicia el bot
-    /inscribirme - Inicia el proceso de inscripción al Torneo activo
-    `;
-    return ctx.reply(helpMessage);
-  }
+  if (!message) return;
 
   if (message == "/enviarapuesta") {
     const userSubscripted = checkSubscription(ctx.from.id);
     if (!userSubscripted)
       return ctx.reply(
-        "Antes de enviar tu apuesta debes inscribirte al torneo con /inscribirme"
+        "Antes de enviar tu apuesta debes inscribirte al Toreo. Usa /start para más información"
       );
     uploadBet = true;
     return ctx.reply(
-      "Adjunta una foto de tu apuesta, procurá que no sean más de una."
+      "Adjunta una foto de tu apuesta, solo puedes enviar una, si detectamos que son más de una imagen no podremos procesar el envío de tu apuesta."
     );
   }
 
@@ -119,7 +151,7 @@ bot.on("message", async (ctx) => {
   if (currentStep === Steps.NAME_LASTNAME_STEP) {
     user.name = message;
     return ctx.reply(
-      `Tu Nombre y Apellido es: ${message}. Es correcto?`,
+      `Tu Nombre y Apellido es: ${message}. ¿Es correcto?`,
       Markup.inlineKeyboard([
         [Markup.button.callback("Si", "CORRECT_NAME_LASTNAME")],
         [Markup.button.callback("No", "INCORRECT_NAME_LASTNAME")],
@@ -131,7 +163,7 @@ bot.on("message", async (ctx) => {
     if (dateRegex.test(message)) {
       user.birthdate = message;
       ctx.reply(
-        `Tu Fecha de Nacimiento es: ${message}. Es correcto?`,
+        `Tu Fecha de Nacimiento es: ${message}. ¿Es correcto?`,
         Markup.inlineKeyboard([
           [Markup.button.callback("Si", "CORRECT_BIRTHDAY")],
           [Markup.button.callback("No", "INCORRECT_BIRTHDAY")],
@@ -145,10 +177,11 @@ bot.on("message", async (ctx) => {
   }
 
   if (currentStep === Steps.TELEGRAM_ALIAS_STEP) {
+    if (message.includes('@')) return ctx.reply('El nombre de usuario no debe contener el @');
     user.telegramAlias = message;
     user.telegramId = ctx.from.id;
     return ctx.reply(
-      `Tu alias en Telegram es: ${message}. Es correcto?`,
+      `Tu alias en Telegram es: "@${message}". ¿Es correcto?`,
       Markup.inlineKeyboard([
         [Markup.button.callback("Si", "CORRECT_TELEGRAM_ALIAS")],
         [Markup.button.callback("No", "INCORRECT_TELEGRAM_ALIAS")],
@@ -163,7 +196,7 @@ bot.action("CORRECT_NAME_LASTNAME", (ctx) => {
       "No has iniciado la inscripción al Torneo, usa /start para comenzar."
     );
   ctx.reply(
-    "Perfecto. Ahora ingresa tu Fecha de Nacimiento con el formato DD/MM/YYYY (ej: 25/04/2000)"
+    "¡Perfecto! Ingresa tu fecha de nacimiento con el formato DD/MM/YYYY. (Ej: 25/04/2000)."
   );
   currentStep = Steps.BIRTHDAY_STEP;
 });
@@ -184,7 +217,7 @@ bot.action("CORRECT_BIRTHDAY", (ctx) => {
       "No has iniciado la inscripción al Torneo, usa /start para comenzar."
     );
   ctx.reply(
-    "Excelente. Como último paso te pediremos tu alias en Telegram, es importante por si tenemos que contactarte"
+    "¡Excelente! Como ultimo paso, solicitamos tu Alias de Telegram ( sin el @ ). Es importante para contactarte por cualquier situación."
   );
   currentStep = Steps.TELEGRAM_ALIAS_STEP;
 });
@@ -211,7 +244,7 @@ bot.action("INCORRECT_TELEGRAM_ALIAS", (ctx) => {
     return ctx.reply(
       "No has iniciado la inscripción al Torneo, usa /start para comenzar."
     );
-  ctx.reply("Por favor, ingresa tu Alias en Telegram");
+  ctx.reply("Por favor, ingresa tu Alias en Telegram sin el @");
   user.telegramAlias = "";
 });
 
@@ -219,23 +252,22 @@ const persistDatabaseUser = async (
   ctx: Context<Update.CallbackQueryUpdate<CallbackQuery>>
 ) => {
   try {
-    const client = await pool.connect();
+    const client =  await withTimeout(pool.connect(), 2000);
     const res = await client.query(
-      "INSERT INTO users (name, birthdate, telegram_alias, telegram_id) VALUES ($1, $2, $3, $4) ON CONFLICT (telegram_id) DO NOTHING RETURNING *",
+      "INSERT INTO users (name, birthdate, telegram_alias, telegram_id) VALUES ($1, $2, $3, $4)",
       [user.name, user.birthdate, user.telegramAlias, user.telegramId]
     );
     client.release();
+    
 
     if (res.rowCount && res.rowCount > 0) {
       ctx.reply(
-        `Felicitaciones! Tu inscripción se ha completado satisfactoriamente. Tu número de identificación es: ${user.telegramId}, no lo pierdas porque te servirá más adelante.`
+        `¡Felicitaciones! Tu inscripción se ha completado satisfactoriamente, te deseamos muchos exitos en el torneo. Por cualquier inquietud, contacta a @nahuelproarg o @valenproarg. (Tu número de identificación es: ${user.telegramId})`
       );
       user = new UserModel();
     }
   } catch (error) {
     console.log(error);
-  } finally {
-    await pool.end();
   }
 };
 
@@ -245,7 +277,7 @@ const checkSignupStart = () => {
 
 const checkSubscription = async (telegram_id: number) => {
   try {
-    const client = await pool.connect();
+    const client =  await withTimeout(pool.connect(), 2000);
     const res = await client.query(
       "SELECT telegram_id FROM users WHERE telegram_id = $1",
       [telegram_id]
@@ -253,9 +285,19 @@ const checkSubscription = async (telegram_id: number) => {
     return res.rowCount;
   } catch (error) {
     console.log(error);
-  } finally {
-    pool.end();
-  }
+  } 
+};
+
+const checkFreeSlots = async () => {
+  try {
+    const client = await withTimeout(pool.connect(), 2000);
+    const res = await client.query(
+      "SELECT COUNT(id) FROM users"
+    );
+    return res.rowCount;
+  } catch (error) {
+    console.log(error);
+  } 
 };
 
 const checkFileExists = (ctx: Context) => {
@@ -279,6 +321,13 @@ const checkFileExists = (ctx: Context) => {
     .catch((err) => console.log(err));
 };
 
+const withTimeout = (promise: any, ms: any) => {
+  const timeout = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Timeout')), ms)
+  );
+  return Promise.race([promise, timeout]);
+};
+
 // Manejar cualquier error
 bot.catch((err) => {
   console.error("Error occurred:", err);
@@ -293,3 +342,15 @@ bot
   .catch((err) => {
     console.error("Failed to launch bot:", err);
   });
+
+const shutdown = async () => {
+  try {
+    await bot.stop();
+    await pool.end();
+  } catch (error) {
+    console.error('Error al cerrar el pool de conexiones:', error);
+  }
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

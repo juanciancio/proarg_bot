@@ -3,4 +3,5 @@ export enum Steps {
   NAME_LASTNAME_STEP = 1,
   BIRTHDAY_STEP = 2,
   TELEGRAM_ALIAS_STEP = 3,
+  UPLOAD_BET_STEP = 4,
 }
