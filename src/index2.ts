@@ -59,14 +59,14 @@ bot.action('SIGNUP_BUTTON', async (ctx: Context) => {
 bot.action('CORRECT_NAME_LASTNAME', async (ctx: Context) => {
   if (!ctx.chat) return;
   if (!ctx.text) return;
-  if (userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
   userStates[ctx.chat.id].currentStep = Steps.BIRTHDAY_STEP;
   ctx.reply(birthdateStep);
 });
 
 bot.action('INCORRECT_NAME_LASTNAME', async (ctx: Context) => {
   if (!ctx.chat) return;
-  if (userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
   ctx.reply(nameLastNameStep_Repeat);
 });
 // --------------------
@@ -75,14 +75,14 @@ bot.action('INCORRECT_NAME_LASTNAME', async (ctx: Context) => {
 bot.action('CORRECT_BIRTHDATE', async (ctx: Context) => {
   if (!ctx.chat) return;
   if (!ctx.text) return;
-  if (userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
   userStates[ctx.chat.id].currentStep = Steps.TELEGRAM_ALIAS_STEP;
   ctx.reply(telegramAliasStep);
 });
 
 bot.action('INCORRECT_BIRTHDATE', async (ctx: Context) => {
   if (!ctx.chat) return;
-  if (userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
   ctx.reply(birthdateStep_Repeat);
 });
 // --------------------
@@ -92,7 +92,7 @@ bot.action('CORRECT_TELEGRAM_ALIAS', async (ctx: Context) => {
   try {
     if (!ctx.chat) return;
     if (!ctx.text) return;
-    if (userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
+    if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
     userStates[ctx.chat.id].currentStep = Steps.NON_STEP;
     await handleFinishSubscription(userStates[ctx.chat.id], ctx);
     delete userStates[ctx.chat.id];
@@ -104,7 +104,7 @@ bot.action('CORRECT_TELEGRAM_ALIAS', async (ctx: Context) => {
 
 bot.action('INCORRECT_TELEGRAM_ALIAS', async (ctx: Context) => {
   if (!ctx.chat) return;
-  if (userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
   ctx.reply(telegramAliasStep_Repeat);
 });
 // --------------------
