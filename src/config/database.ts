@@ -1,17 +1,26 @@
-import dotenv from 'dotenv';
-import pkg from 'pg';
-const { Pool } = pkg;
-dotenv.config();
+import 'reflect-metadata';
+import { DataSource } from 'typeorm';
+import { Bet } from '../entity/bet.entity.js';
+import { User } from '../entity/user.entity.js';
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
+let dataSource: DataSource;
+
+const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: 'localhost',
   port: 5432,
-  max: 10, // Número máximo de conexiones en el pool
-  idleTimeoutMillis: 30000, // Tiempo de espera para liberar conexiones inactivas
-  connectionTimeoutMillis: 2000, // Tiempo de espera para establecer una conexión
+  username: 'postgres',
+  password: '15658298',
+  database: 'proarg',
+  entities: [User, Bet],
+  synchronize: true,
+  logging: false,
 });
 
-export default pool;
+AppDataSource.initialize()
+  .then(() => {
+    dataSource = AppDataSource;
+  })
+  .catch((error) => console.log(error));
+
+export { dataSource };

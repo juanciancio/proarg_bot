@@ -40,3 +40,4 @@ export const finishStep =
   '¡Felicitaciones! Tu inscripción se ha completado satisfactoriamente, te recordamos que podés mandar tu apuesta con el comando /enviarapuesta. Te deseamos muchos exitos en el Torneo. Por cualquier inquietud, contacta a @nahuelproarg o @valenproarg.';
 
 export const uploadBetOk = 'Tu apuesta ha sido enviada y guardada con éxito. ¡Mucha suerte!';
+export const betSended = 'Ya hemos recibido tu apuesta, ¡muchas gracias por participar!';

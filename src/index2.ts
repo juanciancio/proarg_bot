@@ -3,12 +3,15 @@ import { Steps } from './enums/steps.enum.js';
 import {
   checkFileExists,
   checkUserSub,
+  checkingBet,
+  countUsersSubscribed,
   getUserState,
   handleFinishSubscription,
   uploadBet,
 } from './functions/user.function.js';
 import { UserState } from './models/user.state.js';
 import {
+  betSended,
   birthdateStep,
   birthdateStep_Repeat,
   nameLastNameStep,
@@ -20,7 +23,7 @@ import {
   welcomeMsg,
 } from './utils/messages.js';
 
-const bot = new Telegraf('7302706089:AAE5SqLasKdEYVnxYYFGRv6NWk4zfGG1Trw');
+const bot = new Telegraf('6293538580:AAEMltOK56YDk4mQmkJ9IE8VqhtbADzEUeA');
 
 bot.launch();
 
@@ -28,6 +31,8 @@ const userStates: { [key: number]: UserState } = {};
 
 // **** BOT START ****
 bot.start((ctx) => {
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep !== Steps.NON_STEP) return;
+
   ctx.reply(
     welcomeMsg,
     Markup.inlineKeyboard([[Markup.button.callback('Inscribirme', 'SIGNUP_BUTTON')]]),
@@ -38,20 +43,19 @@ bot.start((ctx) => {
 
 // ---- SIGNUP ----
 bot.action('SIGNUP_BUTTON', async (ctx: Context) => {
+  if (!ctx.chat) return;
   if (ctx.from) {
     const userSub = await checkUserSub(ctx.from.id);
 
     if (userSub)
       return ctx.reply('Ya te encuentras inscripto, muchas gracias por tu participación.');
 
-    if (ctx.chat) {
-      const userState = getUserState(userStates, ctx.chat.id);
-      userStates[ctx.chat.id] = userState;
-      userStates[ctx.chat.id].userInfo.telegramId = ctx.from.id;
+    const userState = getUserState(userStates, ctx.chat.id);
+    userStates[ctx.chat.id] = userState;
+    userStates[ctx.chat.id].userInfo.telegramId = ctx.from.id;
 
-      userStates[ctx.chat.id].currentStep = Steps.NAME_LASTNAME_STEP;
-      ctx.reply(nameLastNameStep);
-    }
+    userStates[ctx.chat.id].currentStep = Steps.NAME_LASTNAME_STEP;
+    ctx.reply(nameLastNameStep);
   }
 });
 
@@ -95,7 +99,6 @@ bot.action('CORRECT_TELEGRAM_ALIAS', async (ctx: Context) => {
     if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep === Steps.NON_STEP) return;
     userStates[ctx.chat.id].currentStep = Steps.NON_STEP;
     await handleFinishSubscription(userStates[ctx.chat.id], ctx);
-    delete userStates[ctx.chat.id];
   } catch (error) {
     console.log(error);
     ctx.reply('Ha ocurrido un error al registrar la inscripción.');
@@ -113,6 +116,7 @@ bot.action('INCORRECT_TELEGRAM_ALIAS', async (ctx: Context) => {
 
 bot.command('enviarapuesta', async (ctx: Context) => {
   if (!ctx.from || !ctx.chat) return;
+  if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep !== Steps.NON_STEP) return;
 
   try {
     const userSub = await checkUserSub(ctx.from.id);
@@ -122,13 +126,25 @@ bot.command('enviarapuesta', async (ctx: Context) => {
       );
 
     const checkBet = await checkFileExists(ctx.from.id);
-    if (checkBet)
-      return ctx.reply('Ya has enviado tu apuesta, muchas gracias por tu participación.');
+    if (checkBet) return ctx.reply(betSended);
 
     ctx.reply('Adjunta una captura de tu apuesta, solo debe ser 1 imagen.');
     const userState = getUserState(userStates, ctx.chat.id);
     userStates[ctx.chat.id] = userState;
     userStates[ctx.chat.id].currentStep = Steps.UPLOAD_BET_STEP;
+  } catch (error) {
+    console.log(error);
+    ctx.reply('Ha ocurrido un error');
+  }
+});
+
+bot.command('inscriptos', async (ctx: Context) => {
+  if (!ctx.from || !ctx.chat) return;
+
+  if (ctx.from.username !== 'MauroProArg' && ctx.from.username !== 'juanciancio') return;
+  try {
+    const usersSubscribed = await countUsersSubscribed();
+    ctx.reply(`Actualmente hay ${usersSubscribed} usuarios inscriptos.`);
   } catch (error) {
     console.log(error);
     ctx.reply('Ha ocurrido un error');
@@ -149,62 +165,66 @@ const processUploadBet = async (ctx: Context) => {
     userStates[ctx.chat.id].currentStep = Steps.NON_STEP;
   }
 };
-bot.on('message', (ctx: Context) => {
+
+bot.on('message', async (ctx: Context) => {
   try {
-    if (ctx.chat && ctx.message) {
-      if ('photo' in ctx.message) {
-        return processUploadBet(ctx);
+    if (!ctx.chat) return;
+    if (!ctx.message) return;
+    if (!ctx.from) return;
+    if ('photo' in ctx.message) {
+      const checkBet = await checkingBet(ctx.from.id);
+      if (checkBet) return ctx.reply(betSended);
+      return processUploadBet(ctx);
+    }
+    const chatId = ctx.chat.id;
+    const userState = getUserState(userStates, chatId);
+
+    if (!ctx.text) return;
+
+    switch (userState.currentStep) {
+      case Steps.NAME_LASTNAME_STEP: {
+        userState.userInfo.name = ctx.text;
+        ctx.reply(
+          `Tu nombre y apellido es: "${ctx.text}". ¿Es correcto?`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('Si', 'CORRECT_NAME_LASTNAME')],
+            [Markup.button.callback('No', 'INCORRECT_NAME_LASTNAME')],
+          ]),
+        );
+        break;
       }
-      const chatId = ctx.chat.id;
-      const userState = getUserState(userStates, chatId);
-
-      if (!ctx.text) return;
-
-      switch (userState.currentStep) {
-        case Steps.NAME_LASTNAME_STEP: {
-          userState.userInfo.name = ctx.text;
-          ctx.reply(
-            `Tu nombre y apellido es: "${ctx.text}". ¿Es correcto?`,
-            Markup.inlineKeyboard([
-              [Markup.button.callback('Si', 'CORRECT_NAME_LASTNAME')],
-              [Markup.button.callback('No', 'INCORRECT_NAME_LASTNAME')],
-            ]),
-          );
-          break;
-        }
-        case Steps.BIRTHDAY_STEP: {
-          userState.userInfo.birthdate = ctx.text;
-          ctx.reply(
-            `Tu Fecha de Nacimiento es: "${ctx.text}". ¿Es correcto?`,
-            Markup.inlineKeyboard([
-              [Markup.button.callback('Si', 'CORRECT_BIRTHDATE')],
-              [Markup.button.callback('No', 'INCORRECT_BIRTHDATE')],
-            ]),
-          );
-          break;
-        }
-        case Steps.TELEGRAM_ALIAS_STEP: {
-          userState.userInfo.telegramAlias = ctx.text;
-          ctx.reply(
-            `Tu Alias de Telegram es: "@${ctx.text}". ¿Es correcto?`,
-            Markup.inlineKeyboard([
-              [Markup.button.callback('Si', 'CORRECT_TELEGRAM_ALIAS')],
-              [Markup.button.callback('No', 'INCORRECT_TELEGRAM_ALIAS')],
-            ]),
-          );
-          break;
-        }
-        case Steps.UPLOAD_BET_STEP: {
-          ctx.reply(
-            'Para recibir tu apuesta debes enviar una captura de la misma. Máximo 1 imagen.',
-          );
-          break;
-        }
-        default: {
-          ctx.reply(noStepActive);
-          userState.currentStep = Steps.NON_STEP;
-          break;
-        }
+      case Steps.BIRTHDAY_STEP: {
+        userState.userInfo.birthdate = ctx.text;
+        ctx.reply(
+          `Tu Fecha de Nacimiento es: "${ctx.text}". ¿Es correcto?`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('Si', 'CORRECT_BIRTHDATE')],
+            [Markup.button.callback('No', 'INCORRECT_BIRTHDATE')],
+          ]),
+        );
+        break;
+      }
+      case Steps.TELEGRAM_ALIAS_STEP: {
+        if (ctx.text.includes('@'))
+          return ctx.reply('Debes introducir tu Alias de Telegram sin el @');
+        userState.userInfo.telegramAlias = ctx.text;
+        ctx.reply(
+          `Tu Alias de Telegram es: "@${ctx.text}". ¿Es correcto?`,
+          Markup.inlineKeyboard([
+            [Markup.button.callback('Si', 'CORRECT_TELEGRAM_ALIAS')],
+            [Markup.button.callback('No', 'INCORRECT_TELEGRAM_ALIAS')],
+          ]),
+        );
+        break;
+      }
+      case Steps.UPLOAD_BET_STEP: {
+        ctx.reply('Para recibir tu apuesta debes enviar una captura de la misma. Máximo 1 imagen.');
+        break;
+      }
+      default: {
+        ctx.reply(noStepActive);
+        userState.currentStep = Steps.NON_STEP;
+        break;
       }
     }
   } catch (error) {
