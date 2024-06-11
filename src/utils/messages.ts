@@ -1,27 +1,19 @@
 export const welcomeMsg = `
-🏆 Bienvenidos a la 1ra edición del Torneo de apuestas de Pronósticos Argentinos.
+⚡️*BIENVENIDOS AL TORNEO-FLASH*⚡️
 
-⚠️La participación en el torneo es GRATUITA y tendrá un cupo limite de 500 inscriptos, si llegas a registarte, serás uno de ellos. Es necesario que seás mayor de 18 años para participar🔞
+Esto es un mini-torneo de prueba donde vamos a testear la funcionalidad de nuestro bot.
 
-🔹El torneo consisitirá en varias rondas preliminares, donde comenzarán los 500 competidores, hasta llegar a la suma de 32 participantes. Una vez llegados a esa cantidad, comenzaran los enfrentamientos. 
+Reglas y requisitos:
 
-📍R E G L A S:
+-La cuota mínima será: @1.90
+-Los eventos utilizados deberán ser mayor a @1.40
+-Las apuestas tienen que ser del día de hoy y/o mañana. 
 
-✔️Respeta las indicaciones de los administradores, cada ronda eliminatoria tendrá sus condiciones, es importante leer para no confundirse.
-✔️No envies más apuestas de las solicitadas por ronda. Deberás enviar las imagenes de tus apuestas por este medio
-✔️No es necesario que realices la apuesta con tu dinero, de igual manera, es necesario enviar el boleto elegido con una screenshot.
-✔️Respeta los tiempos de espera, debemos corroborar muchas selecciones.
+💰 *El ganador se llevara un premio de $200.000 pesos.*`;
 
-💰PREMIOS:
+export const firstStep = `🎈 Para inscribirte, te solicitamos tu Alias de Telegram ( sin el @ ).
 
-🥇 Puesto:💲350.000 pesos.
-🥈 Puesto:💲100.000 pesos.
-🥉 Puesto:💲50.000 pesos.
-
-❔Si tienes alguna duda, contactate con @ValenProArg  o con @NahueProArg`;
-
-export const nameLastNameStep =
-  'Necesitaremos algunos datos para realizar la inscripción. Ingresa tu Nombre y Apellido.';
+Es importante que esto lo completes bien, para contactarte por en caso de que ganes.`;
 export const nameLastNameStep_Repeat = 'Por favor, introduce tu Nombre y Apellido correctamente.';
 
 export const birthdateStep =
@@ -36,8 +28,32 @@ export const telegramAliasStep_Repeat = 'Por favor, introduce tu Alias de Telegr
 
 export const noStepActive = 'No comprendo lo que quires decirme, usa /start para más información.';
 
-export const finishStep =
-  '¡Felicitaciones! Tu inscripción se ha completado satisfactoriamente, te recordamos que podés mandar tu apuesta con el comando /enviarapuesta. Te deseamos muchos exitos en el Torneo. Por cualquier inquietud, contacta a @nahuelproarg o @valenproarg.';
+export const finishStep = `
+*¡Felicitaciones!* Tu inscripción se ha completado satisfactoriamente.
+
+🥇 *Ya podés mandar tu apuesta
+haciendo click aquí ➡️ /enviarapuesta*
+
+Te deseamos un gran Torneo ✅`;
 
 export const uploadBetOk = 'Tu apuesta ha sido enviada y guardada con éxito. ¡Mucha suerte!';
 export const betSended = 'Ya hemos recibido tu apuesta, ¡muchas gracias por participar!';
+export const ERROR = 'Ha ocurrido un error. Por favor, contacta a los Administradores.';
+
+export const advertisement = `
+*Hola mi amigo!* Como ya te comentamos por el Canal del Torneo, estamos testeando este Bot y eso nos llevó a perder todas las apuestas del fin de semana.
+
+Sin problema, pero queríamos que tengas prioridad y sepas que *en un par de horas re-lanzamos el torneo* ✅
+
+Si querés ir adelantándote,
+*hacé click aquí* ➡️ /enviarapuesta
+y envía tu apuesta para este nuevo concurso.
+
+Reglas y requisitos:
+
+-La cuota mínima será: @1.90
+-Los eventos utilizados deberán ser mayor a @1.40
+-Las apuestas tienen que ser del día de hoy y/o mañana. 
+
+💰 *El ganador se llevara un premio de $200.000 pesos.*
+`;

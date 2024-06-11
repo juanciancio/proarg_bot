@@ -1,15 +1,14 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { Context } from 'telegraf';
+import axios from 'axios';
+import { addDoc, collection, getDocs, limit, query, where } from 'firebase/firestore';
+import schedule from 'node-schedule';
+import { Context, Telegraf } from 'telegraf';
 import { PhotoSize } from 'telegraf/typings/core/types/typegram.js';
-import { dataSource } from '../config/database.js';
-import { Bet } from '../entity/bet.entity.js';
-import { User } from '../entity/user.entity.js';
+import { bucket, db } from '../config/database.js';
 import { UserModel } from '../models/user.model.js';
 import { UserState } from '../models/user.state.js';
-import { finishStep } from '../utils/messages.js';
+import { ERROR, advertisement, finishStep, uploadBetOk } from '../utils/messages.js';
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
+const token = process.env.TELEGRAM_BOT_TOKEN_TEST;
 
 /**
  * Consulta si el usuario está o no registrado en la base de datos
@@ -18,9 +17,11 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
  */
 export async function checkUserSub(telegramId: number): Promise<boolean> {
   try {
-    const userRepository = dataSource.getRepository(User);
-    const userSub = await userRepository.findOneBy({ telegramId: telegramId });
-    return userSub ? true : false;
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('telegram_id', '==', telegramId), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    return !querySnapshot.empty ? true : false;
   } catch (error) {
     throw error;
   }
@@ -46,17 +47,16 @@ export function getUserState(userState: { [key: number]: UserState }, chatId: nu
  */
 export async function handleFinishSubscription(userState: UserState, ctx: Context): Promise<void> {
   try {
-    const userRepository = dataSource.getRepository(User);
-    const user = new User();
-    user.name = userState.userInfo.name;
-    user.birthdate = userState.userInfo.birthdate;
-    user.telegramAlias = userState.userInfo.telegramAlias;
-    user.telegramId = userState.userInfo.telegramId;
-    user.state = 'PARTICIPANDO';
-    userRepository.save(user);
-    ctx.reply(finishStep);
+    const userData = {
+      state: 'PARTICIPANDO',
+      telegram_alias: userState.userInfo.telegramAlias,
+      telegram_id: userState.userInfo.telegramId,
+    };
+
+    const usersRef = await addDoc(collection(db, 'users'), userData);
+    usersRef.id ? ctx.reply(finishStep, { parse_mode: 'Markdown' }) : ctx.reply(ERROR);
   } catch (error) {
-    await ctx.reply('Hubo un error en la inscripción del usuario.');
+    await ctx.reply(ERROR);
     throw error; // Rechaza la promesa con el error
   }
 }
@@ -67,66 +67,53 @@ export async function handleFinishSubscription(userState: UserState, ctx: Contex
  * @param photo
  * @returns
  */
-export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boolean> {
+export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boolean | undefined> {
   try {
-    if (!ctx.from) return false;
-    const fileId = photo[photo.length - 1].file_id;
+    if (!ctx.message) return;
+    let finish = false;
+    // Obtiene la URL del archivo en Telegram
+    const fileUrl = await ctx.telegram.getFileLink(photo[photo.length - 1].file_id);
 
-    const file = await ctx.telegram.getFile(fileId);
-    const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+    // Descarga la imagen usando axios
+    const response = await axios.get(fileUrl.href, { responseType: 'stream' });
 
-    const response = await fetch(fileUrl);
-    const arrayBuffer = await response.arrayBuffer();
+    // Define el nombre del archivo y la ruta en Firebase Storage
+    const fileName = `bets_images/${ctx.from?.id}.jpg`;
+    const file = bucket.file(fileName);
 
-    const buffer = Buffer.from(arrayBuffer);
+    // Carga la imagen en Firebase Storage
+    const stream = response.data.pipe(
+      file.createWriteStream({
+        metadata: {
+          contentType: 'image/jpeg',
+          created_at: new Date().toUTCString(),
+        },
+      }),
+    );
 
-    const fileExtension = file.file_path?.split('.').pop(); // Obtener la extensión del archivo
-    const fileName = `${ctx.from.id}.${fileExtension}`; // Usar el ID del usuario y la extensión del archivo
-    const filePath = path.join('dist', 'assets', 'bets_img', fileName); // Crear la ruta completa
-    await fs.writeFile(filePath, buffer);
-    await persistBet(ctx.from.id);
+    stream.on('finish', async () => {
+      finish = true;
+    });
+
+    stream.on('error', (err: any) => {
+      console.error('Error al subir la imagen:', err);
+      ctx.reply(ERROR);
+    });
+    if (finish) ctx.reply(uploadBetOk);
     return true;
   } catch (error) {
     throw error;
   }
 }
 
-export async function checkFileExists(userId: number): Promise<boolean> {
-  const directoryPath = path.join('dist', 'assets', 'bets_img');
-
+export async function checkingBet(telegramId: number): Promise<boolean> {
   try {
-    const files = await fs.readdir(directoryPath);
-    return files.some((file) => file.startsWith(userId.toString()));
+    const file = bucket.file(`bets_images/${telegramId}.jpg`);
+    const [exists] = await file.exists();
+    return exists;
   } catch (error) {
     console.error(`Error al leer el directorio: ${error}`);
     return false;
-  }
-}
-
-async function persistBet(telegramId: number): Promise<void> {
-  try {
-    const betRepository = dataSource.getRepository(Bet);
-    const bet = new Bet();
-    bet.telegramId = telegramId;
-    bet.date = new Date().toDateString();
-    betRepository.save(bet);
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Chequea en la base de datos si el usuario ya registró su apuesta
- * @param telegramId
- * @returns
- */
-export async function checkingBet(telegramId: number): Promise<boolean> {
-  try {
-    const betRepository = dataSource.getRepository(Bet);
-    const userSub = await betRepository.findOneBy({ telegramId: telegramId });
-    return userSub ? true : false;
-  } catch (error) {
-    throw error;
   }
 }
 
@@ -136,10 +123,71 @@ export async function checkingBet(telegramId: number): Promise<boolean> {
  */
 export async function countUsersSubscribed(): Promise<number> {
   try {
-    const userRepository = dataSource.getRepository(User);
-    const countUsers = userRepository.count();
-    return countUsers;
+    const userRef = collection(db, 'users');
+    const querySnapshot = await getDocs(userRef);
+
+    return querySnapshot.docs.length;
   } catch (error) {
     throw error;
+  }
+}
+
+export async function scheduleMessage(bot: Telegraf, date: any, blockedUsers: any) {
+  schedule.scheduleJob(date, async () => {
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('telegram_id', '==', 6062935398), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log('No hay usuarios registrados para enviar el mensaje.');
+      return;
+    }
+
+    const userIds: number[] = [];
+    querySnapshot.forEach((doc) => {
+      userIds.push(doc.data().telegram_id);
+    });
+
+    const results = await Promise.all(
+      userIds.map((chatId) => sendMessageSafe(bot, chatId, advertisement, blockedUsers)),
+    );
+
+    // Genera un resumen de los resultados
+    const successCount = results.filter((result) => result.success).length;
+    const failedCount = results.filter((result) => !result.success).length;
+    const failedUsers = results.filter((result) => !result.success).map((result) => result.chatId);
+
+    let responseMessage = `Difusión programada completada.\nMensajes enviados exitosamente: ${successCount}\nFallos: ${failedCount}`;
+    if (failedCount > 0) {
+      responseMessage += `\nUsuarios que fallaron: ${failedUsers.join(', ')}`;
+    }
+
+    console.log(responseMessage);
+  });
+}
+
+export async function sendMessageSafe(
+  bot: Telegraf,
+  chatId: number,
+  message: string,
+  blockedUsers: any,
+) {
+  if (blockedUsers.has(chatId)) {
+    console.log(`No se envió el mensaje al usuario ${chatId} porque ha bloqueado el bot.`);
+    return { chatId, success: false, error: 'Usuario bloqueado' };
+  }
+
+  try {
+    await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    return { chatId, success: true };
+  } catch (error: any) {
+    if (error.response && error.response.error_code === 403) {
+      console.log(`El bot fue bloqueado por el usuario ${chatId} al enviar el mensaje`);
+      blockedUsers.add(chatId);
+      return { chatId, success: false, error: 'Usuario bloqueado' };
+    } else {
+      console.error(`Error al enviar el mensaje al usuario ${chatId}`, error);
+      return { chatId, success: false, error: error.message };
+    }
   }
 }

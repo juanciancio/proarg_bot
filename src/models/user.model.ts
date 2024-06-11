@@ -4,4 +4,5 @@ export class UserModel {
   birthdate: string = '';
   telegramAlias: string = '';
   telegramId: number = 0;
+  state: string = '';
 }
