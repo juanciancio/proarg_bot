@@ -1,7 +1,8 @@
 import moment from 'moment-timezone';
 import { Context, Markup, Telegraf, TelegramError } from 'telegraf';
-import { Steps } from './enums/steps.enum.js';
+import { Steps, UserStatus } from './enums/steps.enum.js';
 import {
+  checkUserStatus,
   checkUserSub,
   checkingBet,
   countUsersSubscribed,
@@ -146,6 +147,11 @@ bot.command('enviarapuesta', async (ctx: Context) => {
       return ctx.reply(
         'No pudimos encontrar tu Inscripción al Torneo, usa /start para más información.',
       );
+
+    const checkUserState = await checkUserStatus(ctx.from.id);
+    if (checkUserState == UserStatus.USER_ELIMINATED)
+      return ctx.reply('No has clafisicado para la siguiente etapa. Mucha suerte la próxima!');
+
     const checkBet = await checkingBet(ctx.from.id);
     if (checkBet) return ctx.reply(betSended);
 
@@ -181,6 +187,10 @@ const processUploadBet = async (ctx: Context) => {
     if ('photo' in ctx.message) {
       if (!userStates[ctx.chat.id] || userStates[ctx.chat.id].currentStep === Steps.NON_STEP)
         return ctx.reply('No puedes enviar tu apuesta en este momento, usa /enviarapuesta');
+
+      const checkUserState = await checkUserStatus(ctx.from.id);
+      if (checkUserState == UserStatus.USER_ELIMINATED)
+        return ctx.reply('No has clafisicado para la siguiente etapa. Mucha suerte la próxima!');
 
       const checkBet = await checkingBet(ctx.from.id);
       if (checkBet) return ctx.reply(betSended);

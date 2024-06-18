@@ -191,3 +191,20 @@ export async function sendMessageSafe(
     }
   }
 }
+
+/**
+ * Devuelve el estado actual del usuario
+ * @param telegramId
+ * @returns
+ */
+export async function checkUserStatus(telegramId: number): Promise<string | null> {
+  try {
+    const userRef = collection(db, 'users');
+    const q = query(userRef, where('telegram_id', '==', telegramId), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    return !querySnapshot.empty ? querySnapshot.docs[0].data().state : null;
+  } catch (error) {
+    throw error;
+  }
+}
