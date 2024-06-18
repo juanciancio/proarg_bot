@@ -1,4 +1,4 @@
-import moment from 'moment-timezone';
+import dotenv from 'dotenv';
 import { Context, Markup, Telegraf, TelegramError } from 'telegraf';
 import { Steps } from './enums/steps.enum.js';
 import {
@@ -7,7 +7,6 @@ import {
   countUsersSubscribed,
   getUserState,
   handleFinishSubscription,
-  scheduleMessage,
   uploadBet,
 } from './functions/user.function.js';
 import { UserState } from './models/user.state.js';
@@ -18,11 +17,13 @@ import {
   firstStep,
   nameLastNameStep_Repeat,
   noStepActive,
+  noUploadBets,
   telegramAliasStep,
   telegramAliasStep_Repeat,
   uploadBetOk,
   welcomeMsg,
 } from './utils/messages.js';
+dotenv.config();
 
 const bot = new Telegraf('7302706089:AAE5SqLasKdEYVnxYYFGRv6NWk4zfGG1Trw');
 let botIsLaunched = false;
@@ -49,7 +50,7 @@ bot.start(async (ctx) => {
     }
 
     await ctx.reply(welcomeMsg, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...Markup.inlineKeyboard([[Markup.button.callback('Inscribirme', 'SIGNUP_BUTTON')]]),
     });
   } catch (error: any) {
@@ -71,6 +72,12 @@ bot.action('SIGNUP_BUTTON', async (ctx: Context) => {
 
     if (userSub)
       return ctx.reply('Ya te encuentras inscripto, muchas gracias por tu participación.');
+
+    const freeSlots = await countUsersSubscribed();
+    if (freeSlots >= 500)
+      return ctx.reply(
+        'Lo sentimos, hemos llegado al máximo de inscripciones. Pero no te desanimes, pronto realizaremos un nuevo Torneo, estate atento.',
+      );
 
     const userState = getUserState(userStates, ctx.chat.id);
     userStates[ctx.chat.id] = userState;
@@ -139,6 +146,7 @@ bot.action('INCORRECT_TELEGRAM_ALIAS', async (ctx: Context) => {
 bot.command('enviarapuesta', async (ctx: Context) => {
   if (!ctx.from || !ctx.chat) return;
   if (userStates[ctx.chat.id] && userStates[ctx.chat.id].currentStep !== Steps.NON_STEP) return;
+  if (process.env.UPLOAD_BETS_ACTIVE == '0') return ctx.reply(noUploadBets);
 
   try {
     const userSub = await checkUserSub(ctx.from.id);
@@ -180,7 +188,7 @@ const processUploadBet = async (ctx: Context) => {
 
     if ('photo' in ctx.message) {
       if (!userStates[ctx.chat.id] || userStates[ctx.chat.id].currentStep === Steps.NON_STEP)
-        return ctx.reply('No puedes enviar tu apuesta en este momento, usa /enviarapuesta');
+        if (process.env.UPLOAD_BETS_ACTIVE == '0') return ctx.reply(noUploadBets);
 
       const checkBet = await checkingBet(ctx.from.id);
       if (checkBet) return ctx.reply(betSended);
@@ -202,6 +210,11 @@ bot.on('message', async (ctx: Context) => {
     if (!ctx.message) return;
     if (!ctx.from) return;
     if ('photo' in ctx.message) {
+      if (process.env.UPLOAD_BETS_ACTIVE == '0')
+        return ctx.reply(
+          'En este momento no puedes enviar tu apuesta, intenta nuevamente más tarde.',
+        );
+
       const checkBet = await checkingBet(ctx.from.id);
       if (checkBet) return ctx.reply(betSended);
       return processUploadBet(ctx);
@@ -267,8 +280,8 @@ bot.on('message', async (ctx: Context) => {
   }
 });
 
-const date = moment
-  .tz('2024-06-11 09:00', 'YYYY-MM-DD HH:mm', 'America/Argentina/Buenos_Aires')
-  .toDate();
+// const date = moment
+//   .tz('2024-06-11 09:00', 'YYYY-MM-DD HH:mm', 'America/Argentina/Buenos_Aires')
+//   .toDate();
 
-scheduleMessage(bot, date, blockedUsers);
+// scheduleMessage(bot, date, blockedUsers);

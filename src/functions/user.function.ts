@@ -17,7 +17,7 @@ const token = process.env.TELEGRAM_BOT_TOKEN_TEST;
  */
 export async function checkUserSub(telegramId: number): Promise<boolean> {
   try {
-    const userRef = collection(db, 'users');
+    const userRef = collection(db, 'registrations');
     const q = query(userRef, where('telegram_id', '==', telegramId), limit(1));
     const querySnapshot = await getDocs(q);
 
@@ -53,7 +53,7 @@ export async function handleFinishSubscription(userState: UserState, ctx: Contex
       telegram_id: userState.userInfo.telegramId,
     };
 
-    const usersRef = await addDoc(collection(db, 'users'), userData);
+    const usersRef = await addDoc(collection(db, 'registrations'), userData);
     usersRef.id ? ctx.reply(finishStep, { parse_mode: 'Markdown' }) : ctx.reply(ERROR);
   } catch (error) {
     await ctx.reply(ERROR);
@@ -71,14 +71,13 @@ export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boole
   try {
     if (!ctx.message) return;
     let finish = false;
-    // Obtiene la URL del archivo en Telegram
+
     const fileUrl = await ctx.telegram.getFileLink(photo[photo.length - 1].file_id);
 
-    // Descarga la imagen usando axios
     const response = await axios.get(fileUrl.href, { responseType: 'stream' });
+    const [files] = await bucket.getFiles({ prefix: 'bets_images/' });
 
-    // Define el nombre del archivo y la ruta en Firebase Storage
-    const fileName = `bets_images/${ctx.from?.id}.jpg`;
+    const fileName = `bets_images/${files.length}_${ctx.from?.id}.jpg`;
     const file = bucket.file(fileName);
 
     // Carga la imagen en Firebase Storage
@@ -108,9 +107,10 @@ export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boole
 
 export async function checkingBet(telegramId: number): Promise<boolean> {
   try {
-    const file = bucket.file(`bets_images/${telegramId}.jpg`);
-    const [exists] = await file.exists();
-    return exists;
+    const [files] = await bucket.getFiles({ prefix: 'bets_images/' });
+    const filePattern = new RegExp(`bets_images/\\d+_${telegramId}.jpg`);
+    const fileExists = files.some((file) => filePattern.test(file.name));
+    return fileExists;
   } catch (error) {
     console.error(`Error al leer el directorio: ${error}`);
     return false;
@@ -123,7 +123,7 @@ export async function checkingBet(telegramId: number): Promise<boolean> {
  */
 export async function countUsersSubscribed(): Promise<number> {
   try {
-    const userRef = collection(db, 'users');
+    const userRef = collection(db, 'registrations');
     const querySnapshot = await getDocs(userRef);
 
     return querySnapshot.docs.length;
@@ -135,8 +135,7 @@ export async function countUsersSubscribed(): Promise<number> {
 export async function scheduleMessage(bot: Telegraf, date: any, blockedUsers: any) {
   schedule.scheduleJob(date, async () => {
     const userRef = collection(db, 'users');
-    const q = query(userRef, where('telegram_id', '==', 6062935398), limit(1));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(userRef);
 
     if (querySnapshot.empty) {
       console.log('No hay usuarios registrados para enviar el mensaje.');

@@ -1,15 +1,32 @@
 export const welcomeMsg = `
-⚡️*BIENVENIDOS AL TORNEO-FLASH*⚡️
+🏆  Bienvenidos a la 1ra edición del Torneo de apuestas de Pronósticos Argentinos.
 
-Esto es un mini-torneo de prueba donde vamos a testear la funcionalidad de nuestro bot.
+💰<b>PREMIOS</b>:
 
-Reglas y requisitos:
+🥇 Puesto:💲350.000 pesos.
+🥈 Puesto:💲100.000 pesos.
+🥉 Puesto:💲50.000 pesos.
 
--La cuota mínima será: @1.90
--Los eventos utilizados deberán ser mayor a @1.40
--Las apuestas tienen que ser del día de hoy y/o mañana. 
+⚠️ La participación en el torneo es <b><u>GRATUITA</u></b> y tendrá un cupo limite de 500 inscriptos 🔞.
 
-💰 *El ganador se llevara un premio de $200.000 pesos.*`;
+🔹 El torneo consisitirá en varias rondas eliminatorias, hasta llegar a la suma de 32 participantes.
+
+☠️ ¿Quienes avanzan? Quiénes aciertan.
+
+Cuando lleguemos a esa instancia, comenzarán los enfrentamientos directos desde 32avos. 
+
+📍<b>R E G L A S</b>:
+
+✔️ Enviá <b>sólo el tipo de apuesta</b> que te piden en una captura simple.
+✔️ Las apuestas se envían por este medio.
+✔️ No es necesario que realices la apuesta <b>con tu dinero</b>. Con la captura del ticket o boleto ya estás participando.
+✔️ Recordá que debes enviar los pronósticos <b>PRE-PARTIDO</b>. No puede realizarse <b><s>EN VIVO</s></b> y menos pasar una acertada con los eventos finalizados.
+✔️ Paciencia con la ronda eliminatoria, <b>debemos corroborar muchas apuestas</b>.
+
+❔Si tienes alguna duda con el torneo @ValenProArg / @NahueProArg
+
+‼️ <b>Registrate AHORA, dándole click a este boton</b>:
+`;
 
 export const firstStep = `🎈 Para inscribirte, te solicitamos tu Alias de Telegram ( sin el @ ).
 
@@ -57,3 +74,6 @@ Reglas y requisitos:
 
 💰 *El ganador se llevara un premio de $200.000 pesos.*
 `;
+
+export const noUploadBets =
+  'En este momento no podemos recibir tu apuesta, intenta nuevamente más tarde.';
