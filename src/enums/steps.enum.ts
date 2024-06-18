@@ -5,3 +5,8 @@ export enum Steps {
   TELEGRAM_ALIAS_STEP = 3,
   UPLOAD_BET_STEP = 4,
 }
+
+export enum UserStatus {
+  USER_ELIMINATED = 'ELIMINADO',
+  USER_PARTICIPATING = 'PARTICIPANDO',
+}
