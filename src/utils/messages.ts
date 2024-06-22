@@ -58,21 +58,27 @@ export const betSended = 'Ya hemos recibido tu apuesta, ¡muchas gracias por par
 export const ERROR = 'Ha ocurrido un error. Por favor, contacta a los Administradores.';
 
 export const advertisement = `
-*Hola mi amigo!* Como ya te comentamos por el Canal del Torneo, estamos testeando este Bot y eso nos llevó a perder todas las apuestas del fin de semana.
+🥳 ¡Felicitaciones, avanzaste a la ronda número 2!
 
-Sin problema, pero queríamos que tengas prioridad y sepas que *en un par de horas re-lanzamos el torneo* ✅
+¡Ya podes dejarnos tu nueva apuesta! Acá te vamos a indicar los requisitos 👇🏻
 
-Si querés ir adelantándote,
-*hacé click aquí* ➡️ /enviarapuesta
-y envía tu apuesta para este nuevo concurso.
+📌 Requisitos:
 
-Reglas y requisitos:
+- Cuota mínima: <b>x2.00</b>
+- Maximo de selecciones: <b>2</b> (podes realizar una combinada de 2 resultados máximo). 
+- Utilizar eventos del: <u>Miércoles 19</u> y/o <u>Jueves 20</u>. Siempre <b>PRE-PARTIDO</b>. 
 
--La cuota mínima será: @1.90
--Los eventos utilizados deberán ser mayor a @1.40
--Las apuestas tienen que ser del día de hoy y/o mañana. 
+ℹ️ Información: 
 
-💰 *El ganador se llevara un premio de $200.000 pesos.*
+- Los ganadores avanzarán a la ronda de 32avos, donde comenzarán los enfrentamientos 1vs1 y se sumarán nuestros 16 pre-clasificados. 
+
+- En caso de que pasen menos de 48 jugadores, se realizará un repechaje entre las personas que consideramos que estuvieron más cerca de avanzar. 
+
+- En caso de que haya más de 48 jugadores, se eliminarán los participantes con menor cuota entre los ganadores hasta llegar al número indicado. 
+
+📲 Consultas: @NahueProArg - @ValenProArg 
+
+¡Mucha suerte! 🍀
 `;
 
 export const noUploadBets =

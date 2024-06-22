@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import moment from 'moment-timezone';
 import { Context, Markup, Telegraf, TelegramError } from 'telegraf';
 import { Steps, UserStatus } from './enums/steps.enum.js';
 import {
@@ -8,6 +9,7 @@ import {
   countUsersSubscribed,
   getUserState,
   handleFinishSubscription,
+  scheduleMessage,
   uploadBet,
 } from './functions/user.function.js';
 import { UserState } from './models/user.state.js';
@@ -158,7 +160,7 @@ bot.command('enviarapuesta', async (ctx: Context) => {
 
     const checkUserState = await checkUserStatus(ctx.from.id);
     if (checkUserState == UserStatus.USER_ELIMINATED)
-      return ctx.reply('No has clafisicado para la siguiente etapa. Mucha suerte la próxima!');
+      return ctx.reply('No has clasificado para la siguiente etapa. Mucha suerte la próxima!');
 
     const checkBet = await checkingBet(ctx.from.id);
     if (checkBet) return ctx.reply(betSended);
@@ -198,7 +200,7 @@ const processUploadBet = async (ctx: Context) => {
 
       const checkUserState = await checkUserStatus(ctx.from.id);
       if (checkUserState == UserStatus.USER_ELIMINATED)
-        return ctx.reply('No has clafisicado para la siguiente etapa. Mucha suerte la próxima!');
+        return ctx.reply('No has clasificado para la siguiente etapa. Mucha suerte la próxima!');
 
       const checkBet = await checkingBet(ctx.from.id);
       if (checkBet) return ctx.reply(betSended);
@@ -290,8 +292,8 @@ bot.on('message', async (ctx: Context) => {
   }
 });
 
-// const date = moment
-//   .tz('2024-06-11 09:00', 'YYYY-MM-DD HH:mm', 'America/Argentina/Buenos_Aires')
-//   .toDate();
+const date = moment
+  .tz('2024-06-18 23:10', 'YYYY-MM-DD HH:mm', 'America/Argentina/Buenos_Aires')
+  .toDate();
 
-// scheduleMessage(bot, date, blockedUsers);
+scheduleMessage(bot, date, blockedUsers);

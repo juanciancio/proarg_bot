@@ -75,9 +75,9 @@ export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boole
     const fileUrl = await ctx.telegram.getFileLink(photo[photo.length - 1].file_id);
 
     const response = await axios.get(fileUrl.href, { responseType: 'stream' });
-    const [files] = await bucket.getFiles({ prefix: 'bets_images/' });
+    const [files] = await bucket.getFiles({ prefix: 'bets_images_round2/' });
 
-    const fileName = `bets_images/${files.length}_${ctx.from?.id}.jpg`;
+    const fileName = `bets_images_round2/${files.length}_${ctx.from?.id}.jpg`;
     const file = bucket.file(fileName);
 
     // Carga la imagen en Firebase Storage
@@ -107,8 +107,8 @@ export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boole
 
 export async function checkingBet(telegramId: number): Promise<boolean> {
   try {
-    const [files] = await bucket.getFiles({ prefix: 'bets_images/' });
-    const filePattern = new RegExp(`bets_images/\\d+_${telegramId}.jpg`);
+    const [files] = await bucket.getFiles({ prefix: 'bets_images_round2/' });
+    const filePattern = new RegExp(`bets_images_round2/\\d+_${telegramId}.jpg`);
     const fileExists = files.some((file) => filePattern.test(file.name));
     return fileExists;
   } catch (error) {
@@ -132,10 +132,12 @@ export async function countUsersSubscribed(): Promise<number> {
   }
 }
 
+// TODO: Mejorar funcion para hacerla dinámica.
 export async function scheduleMessage(bot: Telegraf, date: any, blockedUsers: any) {
   schedule.scheduleJob(date, async () => {
-    const userRef = collection(db, 'users');
-    const querySnapshot = await getDocs(userRef);
+    const userRef = collection(db, 'registrations');
+    const q = query(userRef, where('state', '==', 'PARTICIPANDO'));
+    const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
       console.log('No hay usuarios registrados para enviar el mensaje.');
@@ -177,7 +179,7 @@ export async function sendMessageSafe(
   }
 
   try {
-    await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    await bot.telegram.sendMessage(chatId, message, { parse_mode: 'HTML' });
     return { chatId, success: true };
   } catch (error: any) {
     if (error.response && error.response.error_code === 403) {
@@ -198,7 +200,7 @@ export async function sendMessageSafe(
  */
 export async function checkUserStatus(telegramId: number): Promise<string | null> {
   try {
-    const userRef = collection(db, 'users');
+    const userRef = collection(db, 'registrations');
     const q = query(userRef, where('telegram_id', '==', telegramId), limit(1));
     const querySnapshot = await getDocs(q);
 
