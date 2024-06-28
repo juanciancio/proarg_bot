@@ -58,28 +58,7 @@ export const betSended = 'Ya hemos recibido tu apuesta, ¡muchas gracias por par
 export const ERROR = 'Ha ocurrido un error. Por favor, contacta a los Administradores.';
 
 export const advertisement = `
-🥳 ¡Felicitaciones, avanzaste a la ronda número 2!
-
-¡Ya podes dejarnos tu nueva apuesta! Acá te vamos a indicar los requisitos 👇🏻
-
-📌 Requisitos:
-
-- Cuota mínima: <b>x2.00</b>
-- Maximo de selecciones: <b>2</b> (podes realizar una combinada de 2 resultados máximo). 
-- Utilizar eventos del: <u>Miércoles 19</u> y/o <u>Jueves 20</u>. Siempre <b>PRE-PARTIDO</b>. 
-
-ℹ️ Información: 
-
-- Los ganadores avanzarán a la ronda de 32avos, donde comenzarán los enfrentamientos 1vs1 y se sumarán nuestros 16 pre-clasificados. 
-
-- En caso de que pasen menos de 48 jugadores, se realizará un repechaje entre las personas que consideramos que estuvieron más cerca de avanzar. 
-
-- En caso de que haya más de 48 jugadores, se eliminarán los participantes con menor cuota entre los ganadores hasta llegar al número indicado. 
-
-📲 Consultas: @NahueProArg - @ValenProArg 
-
-¡Mucha suerte! 🍀
-`;
+¡Felicitaciones, avanzaste a los 24avos del Torneo de Apuestas!`;
 
 export const noUploadBets =
   'En este momento no podemos recibir tu apuesta, intenta nuevamente más tarde.';

@@ -75,9 +75,9 @@ export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boole
     const fileUrl = await ctx.telegram.getFileLink(photo[photo.length - 1].file_id);
 
     const response = await axios.get(fileUrl.href, { responseType: 'stream' });
-    const [files] = await bucket.getFiles({ prefix: 'bets_images_round2/' });
+    const [files] = await bucket.getFiles({ prefix: 'bets_images_round3/' });
 
-    const fileName = `bets_images_round2/${files.length}_${ctx.from?.id}.jpg`;
+    const fileName = `bets_images_round3/${files.length}_${ctx.from?.id}.jpg`;
     const file = bucket.file(fileName);
 
     // Carga la imagen en Firebase Storage
@@ -107,8 +107,8 @@ export async function uploadBet(ctx: Context, photo: PhotoSize[]): Promise<boole
 
 export async function checkingBet(telegramId: number): Promise<boolean> {
   try {
-    const [files] = await bucket.getFiles({ prefix: 'bets_images_round2/' });
-    const filePattern = new RegExp(`bets_images_round2/\\d+_${telegramId}.jpg`);
+    const [files] = await bucket.getFiles({ prefix: 'bets_images_round3/' });
+    const filePattern = new RegExp(`bets_images_round3/\\d+_${telegramId}.jpg`);
     const fileExists = files.some((file) => filePattern.test(file.name));
     return fileExists;
   } catch (error) {

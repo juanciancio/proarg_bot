@@ -293,7 +293,7 @@ bot.on('message', async (ctx: Context) => {
 });
 
 const date = moment
-  .tz('2024-06-18 23:10', 'YYYY-MM-DD HH:mm', 'America/Argentina/Buenos_Aires')
+  .tz('2024-06-22 14:27', 'YYYY-MM-DD HH:mm', 'America/Argentina/Buenos_Aires')
   .toDate();
 
 scheduleMessage(bot, date, blockedUsers);
